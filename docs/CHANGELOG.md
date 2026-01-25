@@ -5,10 +5,29 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [2.1.0] - 2026-01-25
 
-### 计划中
-- Web 管理界面
+### 重构
+- 🏗️ **项目结构优化**
+  - 核心代码移至 `src/` 目录，根目录更清爽
+  - 文档移至 `docs/` 目录
+  - Docker 配置移至 `docker/` 目录
+  - 修复所有 import 路径，保持向后兼容
+
+### 修复
+- 🌐 **网络代理智能分流**
+  - 自动检测代理配置，对国内行情接口（东方财富/Tushare）强制直连
+  - 彻底解决 "Gemini 需要代理" vs "行情接口不能走代理" 的冲突
+- 🛡️ **数据源稳定性增强**
+  - 修复 EfinanceFetcher 偶发的 `ProtocolError` (RemoteDisconnected)
+  - 增加对底层网络错误的捕获和重试机制
+- 🐛 **配置加载修复**
+  - 修复重构后 `.env` 文件读取路径错误的问题
+- 👷 **CI/CD 修复**
+  - 修复 GitHub Actions 中路径引用的错误
+
+## [2.0.0] - 2026-01-20
+（此处为 v2.0.0 的历史记录，保持不变）
 
 ## [1.6.0] - 2026-01-19
 
