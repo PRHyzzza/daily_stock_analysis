@@ -28,6 +28,11 @@ from email.header import Header
 from enum import Enum
 
 import requests
+try:
+    import discord
+    discord_available = True
+except ImportError:
+    discord_available = False
 
 from src.config import get_config
 from src.analyzer import AnalysisResult
@@ -350,8 +355,8 @@ class NotificationService:
         report_lines.extend([
             "## 📊 操作建议汇总",
             "",
-            f"| 指标 | 数值 |",
-            f"|------|------|",
+            "| 指标 | 数值 |",
+            "|------|------|",
             f"| 🟢 建议买入/加仓 | **{buy_count}** 只 |",
             f"| 🟡 建议持有/观望 | **{hold_count}** 只 |",
             f"| 🔴 建议减仓/卖出 | **{sell_count}** 只 |",
@@ -474,7 +479,7 @@ class NotificationService:
             
             # 数据来源说明
             if hasattr(result, 'search_performed') and result.search_performed:
-                report_lines.append(f"*🔍 已执行联网搜索*")
+                report_lines.append("*🔍 已执行联网搜索*")
             if hasattr(result, 'data_sources') and result.data_sources:
                 report_lines.append(f"*📋 数据来源：{result.data_sources}*")
             
@@ -747,7 +752,7 @@ class NotificationService:
                     ])
                 
                 # 检查清单
-                checklist = battle.get('action_checklist', [])
+                checklist = battle.get('action_checklist', []) if battle else []
                 if checklist:
                     report_lines.extend([
                         "**✅ 检查清单**",
@@ -1176,14 +1181,24 @@ class NotificationService:
             return len(s.encode('utf-8'))
         
         # 智能分割：优先按 "---" 分隔（股票之间的分隔线）
-        # 如果没有分隔线，按 "### " 标题分割（每只股票的标题）
+        # 其次尝试各级标题分割
         if "\n---\n" in content:
             sections = content.split("\n---\n")
             separator = "\n---\n"
         elif "\n### " in content:
-            # 按 ### 分割，但保留 ### 前缀
+            # 按 ### 分割
             parts = content.split("\n### ")
             sections = [parts[0]] + [f"### {p}" for p in parts[1:]]
+            separator = "\n"
+        elif "\n## " in content:
+            # 按 ## 分割 (兼容二级标题)
+            parts = content.split("\n## ")
+            sections = [parts[0]] + [f"## {p}" for p in parts[1:]]
+            separator = "\n"
+        elif "\n**" in content:
+            # 按 ** 加粗标题分割 (兼容 AI 未输出标准 Markdown 标题的情况)
+            parts = content.split("\n**")
+            sections = [parts[0]] + [f"**{p}" for p in parts[1:]]
             separator = "\n"
         else:
             # 无法智能分割，按字符强制分割
@@ -1248,11 +1263,11 @@ class NotificationService:
                     logger.error(f"企业微信第 {i+1}/{total_chunks} 批发送失败")
             except Exception as e:
                 logger.error(f"企业微信第 {i+1}/{total_chunks} 批发送异常: {e}")
-            
+
             # 批次间隔，避免触发频率限制
             if i < total_chunks - 1:
-                time.sleep(1)
-        
+                time.sleep(2.5)  # 增加到 2.5s，避免企业微信限流
+
         return success_count == total_chunks
     
     def _send_wechat_force_chunked(self, content: str, max_bytes: int) -> bool:
@@ -3032,7 +3047,7 @@ if __name__ == "__main__":
     service = NotificationService()
     
     # 显示检测到的渠道
-    print(f"=== 通知渠道检测 ===")
+    print("=== 通知渠道检测 ===")
     print(f"当前渠道: {service.get_channel_names()}")
     print(f"渠道列表: {service.get_available_channels()}")
     print(f"服务可用: {service.is_available()}")
